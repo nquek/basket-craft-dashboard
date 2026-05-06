@@ -24,7 +24,7 @@ def get_product_count() -> int:
     conn = _connect()
     try:
         cur = conn.cursor()
-        cur.execute("SELECT COUNT(*) FROM dim_products")
+        cur.execute("SELECT COUNT(*) FROM products")
         return cur.fetchone()[0]
     finally:
         conn.close()
