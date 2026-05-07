@@ -110,3 +110,24 @@ def get_daily_revenue(start_date: datetime.date, end_date: datetime.date) -> pd.
         return pd.DataFrame(rows, columns=["order_date", "revenue"])
     finally:
         conn.close()
+
+
+@st.cache_data(ttl=600)
+def get_top_products_by_revenue(start_date: datetime.date, end_date: datetime.date, limit: int = 10) -> pd.DataFrame:
+    conn = _connect()
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT p.PRODUCT_NAME, SUM(oi.PRICE_USD) AS revenue
+            FROM ORDER_ITEMS oi
+            JOIN ORDERS o ON oi.ORDER_ID = o.ORDER_ID
+            JOIN PRODUCTS p ON oi.PRODUCT_ID = p.PRODUCT_ID
+            WHERE DATE(TO_TIMESTAMP_NTZ(o.CREATED_AT / 1000000000)) BETWEEN %s AND %s
+            GROUP BY p.PRODUCT_NAME
+            ORDER BY revenue DESC
+            LIMIT %s
+        """, (start_date.isoformat(), end_date.isoformat(), limit))
+        rows = cur.fetchall()
+        return pd.DataFrame(rows, columns=["product_name", "revenue"])
+    finally:
+        conn.close()

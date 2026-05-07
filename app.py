@@ -3,7 +3,7 @@ import datetime
 import altair as alt
 import streamlit as st
 
-from db import get_daily_revenue, get_headline_metrics, get_product_count
+from db import get_daily_revenue, get_headline_metrics, get_product_count, get_top_products_by_revenue
 
 
 def _pct_delta(current, prior):
@@ -56,5 +56,25 @@ if True:
             )
         )
         st.altair_chart(chart, use_container_width=True)
+
+st.subheader("Top Products by Revenue")
+
+products_df = get_top_products_by_revenue(start_date, end_date)
+if products_df.empty:
+    st.info("No product data for the selected date range.")
+else:
+    bar_chart = (
+        alt.Chart(products_df)
+        .mark_bar()
+        .encode(
+            x=alt.X("revenue:Q", title="Revenue ($)"),
+            y=alt.Y("product_name:N", sort="-x", title=None),
+            tooltip=[
+                alt.Tooltip("product_name:N", title="Product"),
+                alt.Tooltip("revenue:Q", title="Revenue", format="$,.2f"),
+            ],
+        )
+    )
+    st.altair_chart(bar_chart, use_container_width=True)
 
 st.metric("products rows", get_product_count())
