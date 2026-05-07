@@ -71,6 +71,8 @@ def get_headline_metrics() -> dict:
                 GROUP BY 1
             )
             SELECT
+                tm.current_month,
+                tm.prior_month,
                 COALESCE(oa_curr.revenue, 0)  AS revenue_current,
                 COALESCE(oa_curr.orders,  0)  AS orders_current,
                 COALESCE(ia_curr.items,   0)  AS items_current,
@@ -84,7 +86,8 @@ def get_headline_metrics() -> dict:
             LEFT JOIN item_agg  ia_prior ON ia_prior.order_month = tm.prior_month
         """)
         row = cur.fetchone()
-        keys = ["revenue_current", "orders_current", "items_current",
+        keys = ["current_month", "prior_month",
+                "revenue_current", "orders_current", "items_current",
                 "revenue_prior", "orders_prior", "items_prior"]
         if row is None:
             return {k: 0 for k in keys}

@@ -30,6 +30,11 @@ col4.metric("Items Sold",      f"{m['items_current']:,}",       _pct_delta(m["it
 
 with st.sidebar:
     st.header("Filters")
+    st.caption("Metric cards")
+    st.markdown(
+        f"**{m['prior_month'].strftime('%b %Y')}** → **{m['current_month'].strftime('%b %Y')}**"
+    )
+    st.divider()
     start_date, end_date = st.slider(
         "Date range",
         min_value=datetime.date(2023, 3, 1),
