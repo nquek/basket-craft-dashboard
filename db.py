@@ -131,3 +131,37 @@ def get_top_products_by_revenue(start_date: datetime.date, end_date: datetime.da
         return pd.DataFrame(rows, columns=["product_name", "revenue"])
     finally:
         conn.close()
+
+
+@st.cache_data(ttl=600)
+def get_product_names() -> list[str]:
+    conn = _connect()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT PRODUCT_NAME FROM PRODUCTS ORDER BY PRODUCT_NAME")
+        return [row[0] for row in cur.fetchall()]
+    finally:
+        conn.close()
+
+
+@st.cache_data(ttl=600)
+def get_frequently_bought_together(product_name: str) -> pd.DataFrame:
+    conn = _connect()
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT p2.PRODUCT_NAME, COUNT(DISTINCT oi2.ORDER_ID) AS co_orders
+            FROM ORDER_ITEMS oi1
+            JOIN PRODUCTS p1 ON oi1.PRODUCT_ID = p1.PRODUCT_ID
+            JOIN ORDER_ITEMS oi2 ON oi1.ORDER_ID = oi2.ORDER_ID
+                AND oi1.PRODUCT_ID != oi2.PRODUCT_ID
+            JOIN PRODUCTS p2 ON oi2.PRODUCT_ID = p2.PRODUCT_ID
+            WHERE p1.PRODUCT_NAME = %s
+            GROUP BY p2.PRODUCT_NAME
+            ORDER BY co_orders DESC
+            LIMIT 10
+        """, (product_name,))
+        rows = cur.fetchall()
+        return pd.DataFrame(rows, columns=["product_name", "co_orders"])
+    finally:
+        conn.close()

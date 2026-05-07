@@ -3,7 +3,9 @@ import datetime
 import altair as alt
 import streamlit as st
 
-from db import get_daily_revenue, get_headline_metrics, get_product_count, get_top_products_by_revenue
+from db import (get_daily_revenue, get_frequently_bought_together,
+                get_headline_metrics, get_product_count,
+                get_product_names, get_top_products_by_revenue)
 
 
 def _pct_delta(current, prior):
@@ -76,5 +78,28 @@ else:
         )
     )
     st.altair_chart(bar_chart, use_container_width=True)
+
+st.subheader("Bundle Finder")
+
+selected_product = st.selectbox("Pick a product", get_product_names())
+
+if selected_product:
+    bundle_df = get_frequently_bought_together(selected_product)
+    if bundle_df.empty:
+        st.info(f"No co-purchase data found for {selected_product}.")
+    else:
+        bundle_chart = (
+            alt.Chart(bundle_df)
+            .mark_bar()
+            .encode(
+                x=alt.X("co_orders:Q", title="Orders containing both"),
+                y=alt.Y("product_name:N", sort="-x", title=None),
+                tooltip=[
+                    alt.Tooltip("product_name:N", title="Product"),
+                    alt.Tooltip("co_orders:Q",    title="Co-purchased orders"),
+                ],
+            )
+        )
+        st.altair_chart(bundle_chart, use_container_width=True)
 
 st.metric("products rows", get_product_count())
