@@ -49,7 +49,7 @@ def get_headline_metrics() -> dict:
                 FROM ORDERS
                 WHERE DATE_TRUNC('month', TO_TIMESTAMP_NTZ(CREATED_AT / 1000000000))
                     IN (SELECT current_month FROM target_months
-                        UNION ALL SELECT prior_month FROM target_months)
+                        UNION SELECT prior_month FROM target_months)
                 GROUP BY 1
             ),
             item_agg AS (
@@ -60,7 +60,7 @@ def get_headline_metrics() -> dict:
                 JOIN ORDER_ITEMS oi ON o.ORDER_ID = oi.ORDER_ID
                 WHERE DATE_TRUNC('month', TO_TIMESTAMP_NTZ(o.CREATED_AT / 1000000000))
                     IN (SELECT current_month FROM target_months
-                        UNION ALL SELECT prior_month FROM target_months)
+                        UNION SELECT prior_month FROM target_months)
                 GROUP BY 1
             )
             SELECT
@@ -79,6 +79,8 @@ def get_headline_metrics() -> dict:
         row = cur.fetchone()
         keys = ["revenue_current", "orders_current", "items_current",
                 "revenue_prior", "orders_prior", "items_prior"]
+        if row is None:
+            return {k: 0 for k in keys}
         return dict(zip(keys, row))
     finally:
         conn.close()
