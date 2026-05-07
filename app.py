@@ -4,8 +4,8 @@ import altair as alt
 import streamlit as st
 
 from db import (get_daily_revenue, get_frequently_bought_together,
-                get_headline_metrics, get_product_count,
-                get_product_names, get_top_products_by_revenue)
+                get_headline_metrics, get_product_names,
+                get_top_products_by_revenue)
 
 
 def _pct_delta(current, prior):
@@ -102,4 +102,3 @@ if selected_product:
         )
         st.altair_chart(bundle_chart, use_container_width=True)
 
-st.metric("products rows", get_product_count())
