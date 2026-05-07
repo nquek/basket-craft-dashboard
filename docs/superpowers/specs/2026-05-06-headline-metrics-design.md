@@ -12,10 +12,13 @@ Add four headline KPI metrics to the Basket Craft Dashboard: Total Revenue, Tota
 - Runs a single Snowflake query against the `ORDERS` table.
 - Converts the nanosecond `CREATED_AT` column via `TO_TIMESTAMP_NTZ(CREATED_AT / 1000000000)`.
 - Filters to the two most recent complete calendar months using `DATE_TRUNC('month', ...)` and `DATEADD('month', -1/−2, CURRENT_DATE())`.
-- Uses `CASE WHEN` conditional aggregation to compute both months in one pass, returning six values in a single row:
-  - `revenue_current`, `revenue_prior` — `SUM(PRICE_USD)`
-  - `orders_current`, `orders_prior` — `COUNT(*)`
-  - `items_current`, `items_prior` — `SUM(ITEMS_PURCHASED)`
+- Uses two CTEs to aggregate cleanly in a single round-trip:
+  - `order_agg` — groups `ORDERS` by month, computing `SUM(PRICE_USD)` (revenue) and `COUNT(ORDER_ID)` (orders)
+  - `item_agg` — joins `ORDER_ITEMS` to `ORDERS` on `ORDER_ID` (to inherit the order's date), groups by month, computing `COUNT(ORDER_ITEM_ID)` (items sold)
+- Both CTEs are joined together for the two target months, returning six values:
+  - `revenue_current`, `revenue_prior`
+  - `orders_current`, `orders_prior`
+  - `items_current`, `items_prior`
 - Returns a plain `dict` with those six keys.
 - AOV is derived in Python (`revenue / orders`) rather than in SQL to avoid division-by-zero and keep the query simple. If either month has zero orders, AOV and its delta display as `$0.00` with no delta.
 
@@ -44,4 +47,4 @@ In `app.py`, a row of four `st.columns` is added immediately below `st.title`. E
 - Refund-adjusted (net) revenue
 - Month-to-date comparisons
 - Drill-downs, charts, or per-product breakdowns
-- Any other tables (ORDER_ITEMS, WEBSITE_SESSIONS, etc.)
+- Any other tables (WEBSITE_SESSIONS, etc.)
