@@ -1,5 +1,7 @@
+import datetime
 import os
 
+import pandas as pd
 import snowflake.connector
 import streamlit as st
 from dotenv import load_dotenv
@@ -36,10 +38,15 @@ def get_headline_metrics() -> dict:
     try:
         cur = conn.cursor()
         cur.execute("""
-            WITH target_months AS (
-                SELECT
-                    DATE_TRUNC('month', DATEADD('month', -1, CURRENT_DATE())) AS current_month,
-                    DATE_TRUNC('month', DATEADD('month', -2, CURRENT_DATE())) AS prior_month
+            WITH latest_months AS (
+                SELECT DISTINCT DATE_TRUNC('month', TO_TIMESTAMP_NTZ(CREATED_AT / 1000000000)) AS order_month
+                FROM ORDERS
+                ORDER BY 1 DESC
+                LIMIT 2
+            ),
+            target_months AS (
+                SELECT MAX(order_month) AS current_month, MIN(order_month) AS prior_month
+                FROM latest_months
             ),
             order_agg AS (
                 SELECT
@@ -82,5 +89,24 @@ def get_headline_metrics() -> dict:
         if row is None:
             return {k: 0 for k in keys}
         return dict(zip(keys, row))
+    finally:
+        conn.close()
+
+
+@st.cache_data(ttl=600)
+def get_daily_revenue(start_date: datetime.date, end_date: datetime.date) -> pd.DataFrame:
+    conn = _connect()
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT DATE(TO_TIMESTAMP_NTZ(CREATED_AT / 1000000000)) AS order_date,
+                   SUM(PRICE_USD) AS revenue
+            FROM ORDERS
+            WHERE DATE(TO_TIMESTAMP_NTZ(CREATED_AT / 1000000000)) BETWEEN %s AND %s
+            GROUP BY 1
+            ORDER BY 1
+        """, (start_date.isoformat(), end_date.isoformat()))
+        rows = cur.fetchall()
+        return pd.DataFrame(rows, columns=["order_date", "revenue"])
     finally:
         conn.close()
