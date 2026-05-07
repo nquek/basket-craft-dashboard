@@ -26,15 +26,19 @@ col2.metric("Total Orders",    f"{m['orders_current']:,}",      _pct_delta(m["or
 col3.metric("Avg Order Value", f"${aov_current:,.2f}",          aov_delta)
 col4.metric("Items Sold",      f"{m['items_current']:,}",       _pct_delta(m["items_current"],   m["items_prior"]))
 
+with st.sidebar:
+    st.header("Filters")
+    start_date, end_date = st.slider(
+        "Date range",
+        min_value=datetime.date(2023, 3, 1),
+        max_value=datetime.date(2026, 3, 31),
+        value=(datetime.date(2023, 3, 1), datetime.date(2026, 3, 31)),
+        format="MMM D, YYYY",
+    )
+
 st.subheader("Revenue Trend")
 
-date_col1, date_col2 = st.columns(2)
-start_date = date_col1.date_input("From", value=datetime.date(2023, 1, 1))
-end_date   = date_col2.date_input("To",   value=datetime.date.today())
-
-if start_date > end_date:
-    st.error("'From' date must be before 'To' date.")
-else:
+if True:
     df = get_daily_revenue(start_date, end_date)
     if df.empty:
         st.info("No revenue data for the selected date range.")
