@@ -1,3 +1,4 @@
 python-dotenv==1.2.2
 snowflake-connector-python==4.4.0
 streamlit==1.57.0
+pytest
