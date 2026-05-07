@@ -2,15 +2,16 @@ import streamlit as st
 
 from db import get_headline_metrics, get_product_count
 
-st.title("Basket Craft Dashboard")
-
-m = get_headline_metrics()
-
 
 def _pct_delta(current, prior):
     if prior == 0:
         return None
     return f"{(current - prior) / prior * 100:+.1f}%"
+
+
+st.title("Basket Craft Dashboard")
+
+m = get_headline_metrics()
 
 
 aov_current = m["revenue_current"] / m["orders_current"] if m["orders_current"] else 0.0
